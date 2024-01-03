@@ -10,7 +10,7 @@ class Reservation:
         self.status = status
 
     def calculate_total_cost(self):
-        # Placeholder for calculation logic
+
         return self.total_cost
 
 

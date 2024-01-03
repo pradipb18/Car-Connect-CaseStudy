@@ -1,4 +1,4 @@
-# dao/reservation_service.py
+
 import mysql.connector
 from datetime import datetime
 from entity.reservation import Reservation
@@ -66,7 +66,7 @@ class ReservationService:
                                    reservation_data['total_cost'], reservation_data['status']))
 
             connection.commit()
-            return reservation_data['reservation_id']  # return the ID of the newly inserted reservation
+            return reservation_data['reservation_id']
 
         except mysql.connector.Error as err:
             connection.rollback()

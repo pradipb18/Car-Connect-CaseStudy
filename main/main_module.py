@@ -1,4 +1,4 @@
-# main/main_module.py
+
 from dao.customer_service import CustomerService
 from dao.vehicle_service import VehicleService
 from dao.reservation_service import ReservationService
@@ -15,7 +15,7 @@ class MainModule:
     def __init__(self):
 
 
-        # Initialize services with the constructed connection string
+
         self.customer_service = CustomerService()
         self.vehicle_service = VehicleService()
         self.reservation_service = ReservationService()
@@ -161,7 +161,7 @@ class MainModule:
         try:
             customer_id = input("Enter Customer ID: ")
 
-            # Establish a connection and cursor
+
             connection = None
             cursor = None
 
@@ -196,7 +196,7 @@ class MainModule:
                 print(f"An error occurred: {str(e)}")
 
             finally:
-                # Close the cursor and connection in the finally block to ensure they are closed even if an exception occurs
+
                 if cursor:
                     cursor.close()
                 if connection:
@@ -234,7 +234,7 @@ class MainModule:
         password = input("Enter Password: ")
 
         try:
-            # Register the customer
+
             customer_data = {
                 "customer_id":customer_id,
                 "first_name": first_name,
@@ -260,7 +260,7 @@ class MainModule:
             phone_number = input("Enter Phone Number: ")
             address = input("Enter Address: ")
 
-            # Update the customer
+
             customer_data = {
                 "customer_id": customer_id,
                 "first_name": first_name,
@@ -278,7 +278,7 @@ class MainModule:
 
     def delete_customer(self):
         try:
-            # Get customer ID from user input
+
             customer_id = int(input("Enter Customer ID to delete: "))
             self.customer_service.delete_customer(customer_id)
             print("Customer deleted successfully.")
@@ -292,7 +292,7 @@ class MainModule:
         try:
             vehicle_id = input("Enter Vehicle ID: ")
 
-            # Establish a connection and cursor
+
             connection = None
             cursor = None
 
@@ -312,7 +312,7 @@ class MainModule:
 
                 if result:
                     vehicle = Vehicle(*result)
-                    # Display customer information
+
                     print("\nVehicle Information:")
                     print(f"Vehicle ID: {vehicle.vehicle_id}")
                     print(f"Make: {vehicle.make}")
@@ -329,7 +329,7 @@ class MainModule:
                 print(f"An error occurred: {str(e)}")
 
             finally:
-                # Close the cursor and connection in the finally block to ensure they are closed even if an exception occurs
+
                 if cursor:
                     cursor.close()
                 if connection:
@@ -468,7 +468,7 @@ class MainModule:
                 print(f"An error occurred: {str(e)}")
 
             finally:
-                # Close the cursor and connection in the finally block to ensure they are closed even if an exception occurs
+
                 if cursor:
                     cursor.close()
                 if connection:
@@ -481,7 +481,7 @@ class MainModule:
         try:
             customer_id = input("Enter Customer ID: ")
 
-            # Establish a connection and cursor
+
             connection = None
             cursor = None
 
@@ -501,7 +501,7 @@ class MainModule:
 
                 if result:
                     reservation = Reservation(*result)
-                    # Display customer information
+
                     print("\nCustomer Information:")
                     print(f"Reservation ID: {reservation.reservation_id}")
                     print(f"Customer ID: {reservation.customer_id}")
@@ -519,7 +519,7 @@ class MainModule:
                 print(f"An error occurred: {str(e)}")
 
             finally:
-                # Close the cursor and connection in the finally block to ensure they are closed even if an exception occurs
+
                 if cursor:
                     cursor.close()
                 if connection:
@@ -540,7 +540,7 @@ class MainModule:
 
 
         try:
-            # Register the customer
+
             reservation_data = {
                 "reservation_id":reservation_id,
                 "customer_id": customer_id,
@@ -558,7 +558,7 @@ class MainModule:
 
     def update_reservation(self):
         try:
-            # Get customer data from user input
+
             reservation_id = int(input("Enter Reservation ID to update: "))
             customer_id = int(input("Enter Customer ID to update: "))
             vehicle_id = int(input("Enter Vehicle ID to update: "))
@@ -568,7 +568,7 @@ class MainModule:
             status = input("Enter Status: ")
 
 
-            # Update the vehicle
+
             reservation_data = {
                 "reservation_id":reservation_id,
                 "customer_id": customer_id,
@@ -603,7 +603,7 @@ class MainModule:
         try:
             admin_id = input("Enter Admin ID: ")
 
-            # Establish a connection and cursor
+
             connection = None
             cursor = None
 
@@ -638,7 +638,7 @@ class MainModule:
                 print(f"An error occurred: {str(e)}")
 
             finally:
-                # Close the cursor and connection in the finally block to ensure they are closed even if an exception occurs
+
                 if cursor:
                     cursor.close()
                 if connection:
@@ -667,7 +667,7 @@ class MainModule:
 
 
     def register_admin(self):
-        # Get customer data from user input
+
         admin_id = input("Enter Admin ID: ")
         first_name = input("Enter First Name: ")
         last_name = input("Enter Last Name: ")
@@ -679,7 +679,7 @@ class MainModule:
         join_date=input("Enter Join Date:")
 
         try:
-            # Register the admin
+
             admin_data = {
                 "admin_id":admin_id,
                 "first_name": first_name,
@@ -737,7 +737,7 @@ class MainModule:
             print(f"Error: {e}")
 
 
-    # Similarly, implement functions for vehicle_management, reservation_system, and admin_management
+
 
 if __name__ == "__main__":
     car_connect_system = MainModule()

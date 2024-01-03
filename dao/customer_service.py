@@ -1,4 +1,4 @@
-# dao/customer_service.py
+
 import mysql.connector
 from entity.customer import Customer
 from exception.exceptions import AuthenticationException, InvalidInputException, DatabaseConnectionException,CustomerNotFoundException
@@ -6,6 +6,37 @@ from util.db_property_util import DBUtil
 
 
 class CustomerService:
+
+
+    def authenticate(self, username, password):
+        try:
+            connection = DBUtil.getDBConn()
+            cursor = connection.cursor()
+
+            query = "SELECT * FROM Customer WHERE Username = %s AND Password = %s"
+            cursor.execute(query, (username, password))
+            result = cursor.fetchone()
+
+            if result :
+                print("customer found",[*result])
+                customer = Customer(*result)
+                return customer
+            else:
+                print("customer not found")
+                raise AuthenticationException("Invalid username or password.")
+
+        except mysql.connector.Error as err:
+            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+
+
+
+
 
 
     def get_customer_by_id(self, customer_id):
@@ -78,7 +109,7 @@ class CustomerService:
             ))
 
             connection.commit()
-            return  customer_data['customer_id'] # return the ID of the newly inserted customer
+            return  customer_data['customer_id']
 
         except mysql.connector.Error as err:
             connection.rollback()
@@ -128,3 +159,8 @@ class CustomerService:
         finally:
             cursor.close()
             connection.close()
+
+
+
+
+

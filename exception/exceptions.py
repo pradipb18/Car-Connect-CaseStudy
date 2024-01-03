@@ -1,4 +1,4 @@
-# exception/exceptions.py
+
 class AuthenticationException(Exception):
     pass
 

@@ -73,7 +73,7 @@ class AdminService:
             ))
 
             connection.commit()
-            return admin_data['admin_id']  # return the ID of the newly inserted admin
+            return admin_data['admin_id']
 
         except mysql.connector.Error as err:
             connection.rollback()
