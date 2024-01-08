@@ -1,67 +1,52 @@
-
-import mysql.connector
-from entity.vehicle import Vehicle
-from exception.exceptions import InvalidInputException, DatabaseConnectionException
-from util.db_property_util import DBUtil
+from interfaces.IVehicleService import IVehicleService
+from exception.exceptions import VehicleNotFoundException
 
 
-class VehicleService:
+class VehicleService(IVehicleService):
+    def __init__(self, db_conn_util, connection_string):
+        self._db_conn_util = db_conn_util
+        self._connection_string = connection_string
 
-
-
-    def get_vehicle_by_id(self, vehicle_id):
+    def GetVehicleById(self, vehicle_id):
         try:
-            connection = DBUtil.getDBConn()
+            connection = self._db_conn_util.get_connection(self._connection_string)
             cursor = connection.cursor()
 
-            query = "SELECT * FROM Vehicle WHERE VehicleID = %s"
-            cursor.execute(query, (vehicle_id,))
-
+            cursor.execute("SELECT * FROM Vehicle WHERE VehicleID = %s", (vehicle_id,))
             vehicle_data = cursor.fetchone()
 
-            if not vehicle_data:
-                raise InvalidInputException(f"Vehicle with ID {vehicle_id} not found.")
-
-            vehicle = Vehicle(**vehicle_data)
-            return vehicle
-
-        except mysql.connector.Error as err:
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
+            if vehicle_data:
+                return vehicle_data
+            else:
+                raise VehicleNotFoundException(f"Vehicle with ID {vehicle_id} not found.")
 
         finally:
-            cursor.close()
-            connection.close()
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
 
-    def get_available_vehicles(self):
+    def GetAvailableVehicles(self):
         try:
-            connection = DBUtil.getDBConn()
-            cursor = connection.cursor(dictionary=True)
-
-            query = "SELECT * FROM Vehicle WHERE Availability = 1"
-            cursor.execute(query)
-
-            vehicles_data = cursor.fetchall()
-
-            if not vehicles_data:
-                raise InvalidInputException("No available vehicles found.")
-
-            return vehicles_data
-
-        except mysql.connector.Error as err:
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
-
-        finally:
-            cursor.close()
-            connection.close()
-
-    def register_vehicle(self, vehicle_data):
-        try:
-            connection = DBUtil.getDBConn()
+            connection = self._db_conn_util.get_connection(self._connection_string)
             cursor = connection.cursor()
 
-            query = "INSERT INTO Vehicle (VehicleID,Model, Make, Year, Color, RegistrationNumber, Availability, DailyRate) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-            cursor.execute(query, (
-                vehicle_data['vehicle_id'],
+            cursor.execute("SELECT * FROM Vehicle WHERE Availability>0")
+            available_vehicles = cursor.fetchall()
+
+            return available_vehicles
+
+        finally:
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
+
+    def AddVehicle(self, vehicle_data):
+        try:
+            connection = self._db_conn_util.get_connection(self._connection_string)
+            cursor = connection.cursor()
+
+            cursor.execute("""
+                INSERT INTO Vehicle (Model, Make, Year, Color, RegistrationNumber, Availability, DailyRate)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (
                 vehicle_data['model'],
                 vehicle_data['make'],
                 vehicle_data['year'],
@@ -72,75 +57,49 @@ class VehicleService:
             ))
 
             connection.commit()
-            return vehicle_data['vehicle_id']
+            print("Vehicle added successfully.")
 
-        except mysql.connector.Error as err:
-            connection.rollback()
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
-        except Exception as e:
-            connection.rollback()
-            raise DatabaseConnectionException(f"Error adding a new vehicle to the database: {e}")
         finally:
-            cursor.close()
-            connection.close()
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
 
-    def update_vehicle(self, vehicle_data):
+    def UpdateVehicle(self, vehicle_data):
         try:
-            connection = DBUtil.getDBConn()
+            connection = self._db_conn_util.get_connection(self._connection_string)
             cursor = connection.cursor()
-
-            query = "UPDATE Vehicle SET Model=%s, Make=%s, Year=%s, Color=%s, RegistrationNumber=%s, Availability=%s, DailyRate=%s WHERE VehicleID=%s"
-            cursor.execute(query, (vehicle_data['model'], vehicle_data['make'], vehicle_data['year'],
-                                   vehicle_data['color'], vehicle_data['registration_number'],
-                                   vehicle_data['availability'],
-                                   vehicle_data['daily_rate'], vehicle_data['vehicle_id']))
+            cursor.execute("""
+                UPDATE Vehicle
+                SET Model = %s, Make = %s, Year = %s, Color = %s,
+                    RegistrationNumber = %s, Availability = %s, DailyRate = %s
+                WHERE VehicleID = %s
+            """, (
+                vehicle_data['model'],
+                vehicle_data['make'],
+                vehicle_data['year'],
+                vehicle_data['color'],
+                vehicle_data['registration_number'],
+                vehicle_data['availability'],
+                vehicle_data['daily_rate'],
+                vehicle_data['vehicle_id']
+            ))
 
             connection.commit()
-
-        except mysql.connector.Error as err:
-            connection.rollback()
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
+            print("Vehicle updated successfully.")
 
         finally:
-            cursor.close()
-            connection.close()
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
 
-    def remove_vehicle(self, vehicle_id):
+    def RemoveVehicle(self, vehicle_id):
         try:
-            connection = DBUtil.getDBConn()
+            connection = self._db_conn_util.get_connection(self._connection_string)
             cursor = connection.cursor()
 
-            query = "DELETE FROM Vehicle WHERE VehicleID=%s"
-            cursor.execute(query, (vehicle_id,))
+            cursor.execute("DELETE FROM Vehicle WHERE VehicleID = %s", (vehicle_id,))
 
             connection.commit()
-
-        except mysql.connector.Error as err:
-            connection.rollback()
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
+            print("Vehicle removed successfully.")
 
         finally:
-            cursor.close()
-            connection.close()
-
-    def get_all_vehicles(self):
-        try:
-            connection = DBUtil.getDBConn()
-            cursor = connection.cursor(dictionary=True)
-
-            query = "SELECT * FROM Vehicle"
-            cursor.execute(query)
-
-            vehicles_data = cursor.fetchall()
-
-            if not vehicles_data:
-                raise InvalidInputException("No vehicles found.")
-
-            return vehicles_data
-
-        except mysql.connector.Error as err:
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
-
-        finally:
-            cursor.close()
-            connection.close()
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()

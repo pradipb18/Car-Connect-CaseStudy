@@ -1,67 +1,59 @@
-# dao/admin_service.py
-import mysql.connector
-from entity.admin import Admin
-from exception.exceptions import InvalidInputException, DatabaseConnectionException
-from util.db_property_util import DBUtil
+from interfaces.IAdminService import IAdminService
+from exception.exceptions import AdminNotFoundException
 
 
-class AdminService:
+class AdminService(IAdminService):
+    def __init__(self, db_conn_util, connection_string):
+        self._db_conn_util = db_conn_util
+        self._connection_string = connection_string
 
-
-    def get_admin_by_id(self, admin_id):
+    def GetAdminById(self, admin_id):
         try:
-            connection = DBUtil.getDBConn()
+            connection = self._db_conn_util.get_connection(self._connection_string)
             cursor = connection.cursor()
 
-            query = "SELECT * FROM Admin WHERE AdminID = %s"
-            cursor.execute(query, (admin_id,))
-
+            cursor.execute("SELECT * FROM Admin WHERE AdminID = %s", (admin_id,))
             admin_data = cursor.fetchone()
 
-            if not admin_data:
-                raise InvalidInputException(f"Admin with ID {admin_id} not found.")
-
-            admin = Admin(**admin_data)
-            return admin
-
-        except mysql.connector.Error as err:
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
+            if admin_data:
+                return admin_data
+            else:
+                raise AdminNotFoundException(f"Admin with ID {admin_id} not found.")
 
         finally:
-            cursor.close()
-            connection.close()
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
 
-    def get_admin_by_username(self, username):
+    def GetAdminByUsername(self, username):
         try:
-            connection = DBUtil.getDBConn()
+            connection = self._db_conn_util.get_connection(self._connection_string)
             cursor = connection.cursor()
 
-            query = "SELECT * FROM Admin WHERE Username = %s"
-            cursor.execute(query, (username,))
+            cursor.execute("SELECT AdminID, Password FROM Admin WHERE Username = %s", (username,))
+            admin_data1 = cursor.fetchone()
 
-            admin_data = cursor.fetchone()
-
-            if not admin_data:
-                raise InvalidInputException(f"Admin with username {username} not found.")
-
-            admin = Admin(*admin_data)
-            return admin
-
-        except mysql.connector.Error as err:
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
+            if admin_data1:
+                admin_dict = {
+                    'AdminID': admin_data1[0],
+                    'Password': admin_data1[1]
+                }
+                return admin_dict
+            else:
+                raise AdminNotFoundException(f"Customer with FirstName {username} not found.")
 
         finally:
-            cursor.close()
-            connection.close()
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
 
-    def register_admin(self, admin_data):
+    def RegisterAdmin(self, admin_data):
         try:
-            connection = DBUtil.getDBConn()
+            connection = self._db_conn_util.get_connection(self._connection_string)
             cursor = connection.cursor()
 
-            query = "INSERT INTO Admin (AdminID,FirstName, LastName, Email, PhoneNumber, Username, Password, Role, JoinDate) VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s)"
-            cursor.execute(query, (
-                admin_data['admin_id'],
+            cursor.execute("""
+                   INSERT INTO Admin (FirstName, LastName, Email, PhoneNumber, Username, Password, Role, JoinDate)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+               """, (
                 admin_data['first_name'],
                 admin_data['last_name'],
                 admin_data['email'],
@@ -73,49 +65,47 @@ class AdminService:
             ))
 
             connection.commit()
-            return admin_data['admin_id']
-
-        except mysql.connector.Error as err:
-            connection.rollback()
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
+            print("Admin registered successfully.")
 
         finally:
-            cursor.close()
-            connection.close()
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
 
-    def update_admin(self, admin_data):
+    def UpdateAdmin(self, admin_data):
         try:
-            connection = DBUtil.getDBConn()
+            connection = self._db_conn_util.get_connection(self._connection_string)
             cursor = connection.cursor()
 
-            query = "UPDATE Admin SET FirstName=%s, LastName=%s, Email=%s, PhoneNumber=%s, Role=%s WHERE AdminID=%s"
-            cursor.execute(query, (admin_data['first_name'], admin_data['last_name'], admin_data['email'],
-                                   admin_data['phone_number'], admin_data['role'], admin_data['admin_id']))
+            cursor.execute("""
+                UPDATE Admin
+                SET FirstName = %s, LastName = %s, Email = %s, PhoneNumber = %s, Password = %s
+                WHERE AdminID = %s
+            """, (
+                admin_data['first_name'],
+                admin_data['last_name'],
+                admin_data['email'],
+                admin_data['phone_number'],
+                admin_data['password'],
+                admin_data['admin_id']
+            ))
 
             connection.commit()
-
-        except mysql.connector.Error as err:
-            connection.rollback()
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
+            print("Admin updated successfully.")
 
         finally:
-            cursor.close()
-            connection.close()
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
 
-    def delete_admin(self, admin_id):
+    def DeleteAdmin(self, admin_id):
         try:
-            connection = DBUtil.getDBConn()
+            connection = self._db_conn_util.get_connection(self._connection_string)
             cursor = connection.cursor()
 
-            query = "DELETE FROM Admin WHERE AdminID=%s"
-            cursor.execute(query, (admin_id,))
+            cursor.execute("DELETE FROM Admin WHERE AdminID = %s", (admin_id,))
 
             connection.commit()
-
-        except mysql.connector.Error as err:
-            connection.rollback()
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
+            print("Admin deleted successfully.")
 
         finally:
-            cursor.close()
-            connection.close()
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()

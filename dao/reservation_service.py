@@ -1,112 +1,134 @@
 
-import mysql.connector
-from datetime import datetime
-from entity.reservation import Reservation
-from exception.exceptions import InvalidInputException, DatabaseConnectionException
-from util.db_property_util import DBUtil
+from interfaces.IReservationService import IReservationService
+from exception.exceptions import ReservationNotFoundException
+from decimal import Decimal
 
 
-class ReservationService:
+class ReservationService(IReservationService):
+    def __init__(self, db_conn_util, connection_string):
+        self._db_conn_util = db_conn_util
+        self._connection_string = connection_string
 
-
-    def get_reservation_by_id(self, reservation_id):
+    def GetReservationById(self, reservation_id):
         try:
-            connection = DBUtil.getDBConn()
+            connection = self._db_conn_util.get_connection(self._connection_string)
             cursor = connection.cursor()
 
-            query = "SELECT * FROM Reservation WHERE ReservationID = %s"
-            cursor.execute(query, (reservation_id,))
-
+            cursor.execute("SELECT * FROM Reservation WHERE ReservationID = %s", (reservation_id,))
             reservation_data = cursor.fetchone()
 
-            if not reservation_data:
-                raise InvalidInputException(f"Reservation with ID {reservation_id} not found.")
-
-            reservation = Reservation(**reservation_data)
-            return reservation
-
-        except mysql.connector.Error as err:
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
+            if reservation_data:
+                return reservation_data
+            else:
+                raise ReservationNotFoundException(f"Reservation with ID {reservation_id} not found.")
 
         finally:
-            cursor.close()
-            connection.close()
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
 
-    def get_reservations_by_customer_id(self, customer_id):
+    def GetReservationsByCustomerId(self, customer_id):
         try:
-            connection = DBUtil.getDBConn()
+            connection = self._db_conn_util.get_connection(self._connection_string)
             cursor = connection.cursor()
 
-            query = "SELECT * FROM Reservation WHERE CustomerID = %s"
-            cursor.execute(query, (customer_id,))
-
+            cursor.execute("SELECT * FROM Reservation WHERE CustomerID = %s", (customer_id,))
             reservations_data = cursor.fetchall()
 
-            if not reservations_data:
-                raise InvalidInputException(f"No reservations found for customer with ID {customer_id}.")
-
-            reservations = [Reservation(**data) for data in reservations_data]
-            return reservations
-
-        except mysql.connector.Error as err:
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
+            if reservations_data:
+                return reservations_data
+            else:
+                raise ReservationNotFoundException(f"No reservations found for Customer ID {customer_id}.")
 
         finally:
-            cursor.close()
-            connection.close()
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
 
-    def create_reservation(self, reservation_data):
+    def CreateReservation(self, reservationData,):
         try:
-            connection = DBUtil.getDBConn()
+            connection = self._db_conn_util.get_connection(self._connection_string)
             cursor = connection.cursor()
 
-            query = "INSERT INTO Reservation (ReservationID,CustomerID, VehicleID, StartDate, EndDate, TotalCost, Status) VALUES (%s, %s, %s, %s, %s, %s,%s)"
-            cursor.execute(query, (reservation_data['reservation_id'],reservation_data['customer_id'], reservation_data['vehicle_id'],
-                                   reservation_data['start_date'], reservation_data['end_date'],
-                                   reservation_data['total_cost'], reservation_data['status']))
+            cursor.execute("""
+                INSERT INTO Reservation (CustomerID, VehicleID, StartDate, EndDate, TotalCost, Status)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (
+                reservationData['customer_id'],
+                reservationData['vehicle_id'],
+                reservationData['start_date'],
+                reservationData['end_date'],
+                Decimal(reservationData['total_cost']),
+                reservationData['status']
+            ))
 
             connection.commit()
-            return reservation_data['reservation_id']
-
-        except mysql.connector.Error as err:
-            connection.rollback()
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
+            print("Reservation created successfully.")
 
         finally:
-            cursor.close()
-            connection.close()
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
 
-    def update_reservation(self, reservation_data):
+    def UpdateReservation(self, reservation_data):
         try:
-            connection = DBUtil.getDBConn()
-            cursor = connection.cursor()
-            query = "UPDATE Reservation SET CustomerID=%s, VehicleID=%s, StartDate=%s, EndDate=%s, TotalCost=%s, Status=%s WHERE ReservationID=%s"
-            cursor.execute(query, (reservation_data['customer_id'], reservation_data['vehicle_id'], reservation_data['start_date'],reservation_data['end_date'], reservation_data['total_cost'],reservation_data['status'], reservation_data['reservation_id']))
-            connection.commit()
-
-
-        except mysql.connector.Error as err:
-            connection.rollback()
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
-
-        finally:
-            cursor.close()
-            connection.close()
-
-    def cancel_reservation(self, reservation_id):
-        try:
-            connection = DBUtil.getDBConn()
+            connection = self._db_conn_util.get_connection(self._connection_string)
             cursor = connection.cursor()
 
-            query = "UPDATE Reservation SET Status='Canceled' WHERE ReservationID=%s"
-            cursor.execute(query, (reservation_id,))
+            cursor.execute("""
+                UPDATE Reservation
+                SET CustomerID = %s,
+                    VehicleID = %s,
+                    StartDate = %s,
+                    EndDate = %s,
+                    TotalCost = %s,
+                    Status = %s
+                WHERE ReservationID = %s
+            """, (
+                reservation_data['customer_id'],
+                reservation_data['vehicle_id'],
+                reservation_data['start_date'],
+                reservation_data['end_date'],
+                reservation_data['total_cost'],
+                reservation_data['status'],
+                reservation_data['reservation_id']
+            ))
 
             connection.commit()
-
-        except mysql.connector.Error as err:
-            connection.rollback()
-            raise DatabaseConnectionException(f"Error connecting to the database: {err}")
+            print("Reservation updated successfully.")
 
         finally:
-            cursor.close()
-            connection.close()
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
+
+    def CancelReservation(self, reservation_id):
+        try:
+            connection = self._db_conn_util.get_connection(self._connection_string)
+            cursor = connection.cursor()
+
+            cursor.execute("""
+                UPDATE Reservation
+                SET Status = 'Cancelled'
+                WHERE ReservationID = %s
+            """, (reservation_id,))
+
+            connection.commit()
+            print(f"Reservation with ID {reservation_id} has been cancelled.")
+
+        finally:
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
+
+    def GetReservationsList(self):
+        try:
+            connection = self._db_conn_util.get_connection(self._connection_string)
+            cursor = connection.cursor()
+
+            cursor.execute("SELECT * FROM Reservation")
+            reservations_data = cursor.fetchall()
+
+            if reservations_data:
+                return reservations_data
+            else:
+                raise ReservationNotFoundException("No reservations found.")
+
+        finally:
+            if 'connection' in locals() or 'connection' in globals():
+                connection.close()
